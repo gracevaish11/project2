@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Employee Registration - Collaborative Tool</title>
+  <link rel="stylesheet" href="styles/css/form.css" />
+</head>
+<body>
+
+  <div class="container">
+    <h1>Employee Registration</h1>
+    <form id="registrationForm">
+      <label for="emp_id">Employee ID :</label>
+      <input type="text" id="emp_id" name="emp_id" required />
+
+      <label for="name">Name :</label>
+      <input type="text" id="name" name="name" required />
+
+      <label for="department">Department :</label>
+      <select name="department" id="department" required>
+        <option value="Finance">Finance</option>
+        <option value="HR">HR</option>
+        <option value="IT">IT</option>
+        <option value="Marketing">Marketing</option>
+        <option value="Operations">Operations</option>
+        <option value="Sales">Sales</option>
+        <option value="Legal">Legal</option>
+        <option value="Customer Support">Customer Support</option>
+      </select>
+
+      <label for="email">Email :</label>
+      <input type="email" id="email" name="email" required />
+
+      <label for="password">Password :</label>
+      <input type="password" id="password" name="password" required />
+
+      <label for="confirmPassword">Confirm Password :</label>
+      <input type="password" id="confirmPassword" name="confirmPassword" required />
+
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('registrationForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const emp_id = document.getElementById('emp_id').value.trim();
+      const name = document.getElementById('name').value.trim();
+      const department = document.getElementById('department').value;
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      if (password !== confirmPassword) {
+        alert("Passwords do not match. Please re-enter.");
+        return;
+      }
+
+      try {
+        const response = await fetch('https://collabsync-backend-i376.onrender.com/post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ emp_id, name, department, email, password }),
+        });
+
+        const data = await response.json(); // ✅ FIXED: Parse response as JSON
+
+        if (response.ok) {
+          localStorage.setItem('username', name);
+          localStorage.setItem('userId', data._id); // ✅ Will now store the correct user ID
+
+          const normalizedEmpId = emp_id.toUpperCase();
+          if (normalizedEmpId.startsWith("MM")) {
+            window.location.href = "manager_dashboard.html";
+          } else {
+            window.location.href = "Dashboard.html";
+          }
+        } else {
+          alert(data.message || 'Error occurred while registering.');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again later.');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Assigned Employees | CollabSync</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles/css/managerdash1.css" />
+</head>
+<body class="bg-light">
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-dark bg-dark px-4">
+    <span class="navbar-brand mb-0 h1">CollabSync</span>
+    <div>
+      <a href="assign_employees.html" class="btn btn-outline-light me-2">Assign More</a>
+      <button class="btn btn-danger" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <div class="container py-4">
+    <h2 class="mb-3">Employees Assigned Under You</h2>
+    <p id="noAssigned" class="text-muted">Loading...</p>
+    <div id="assignedContainer" class="row g-3"></div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const managerId = localStorage.getItem("userId") || sessionStorage.getItem("userId");
+      const container = document.getElementById("assignedContainer");
+      const placeholder = document.getElementById("noAssigned");
+
+      if (!managerId) {
+        placeholder.innerText = "You are not logged in.";
+        console.warn("No manager ID found in localStorage/sessionStorage.");
+        return;
+      }
+
+      console.log("🟡 Logged-in managerId:", managerId);
+
+      try {
+        const res = await fetch(`https://collabsync-backend-i376.onrender.com/api/users/assigned/${managerId}`);
+        const employees = await res.json();
+
+        if (!res.ok) throw new Error("Failed to fetch assigned users");
+
+        if (!Array.isArray(employees) || employees.length === 0) {
+          placeholder.innerText = "No employees assigned yet.";
+          return;
+        }
+
+        placeholder.style.display = "none";
+
+        employees.forEach(emp => {
+          const col = document.createElement("div");
+          col.className = "col-md-4";
+
+          const card = document.createElement("div");
+          card.className = "card shadow-sm p-3 h-100";
+          card.innerHTML = `
+            <h5 class="fw-bold">${emp.name}</h5>
+            <p class="mb-1"><strong>ID:</strong> ${emp._id}</p>
+            <p class="mb-1"><strong>Dept:</strong> ${emp.branch}</p>
+            <p class="mb-2"><strong>Email:</strong> ${emp.email}</p>
+            <button class="btn btn-outline-danger w-100" onclick="unassignEmployee('${emp._id}', this)">Remove</button>
+          `;
+
+          col.appendChild(card);
+          container.appendChild(col);
+        });
+      } catch (err) {
+        console.error("❌ Error fetching assigned employees:", err);
+        placeholder.innerText = "❌ Error fetching assigned employees.";
+      }
+    });
+
+    async function unassignEmployee(empId, button) {
+      try {
+        const res = await fetch("https://collabsync-backend-i376.onrender.com/api/users/unassign", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ empId })
+        });
+
+        const result = await res.json();
+
+        if (res.ok) {
+          button.innerText = "Removed";
+          button.disabled = true;
+          button.classList.remove("btn-outline-danger");
+          button.classList.add("btn-success");
+          button.closest(".col-md-4").remove();
+        } else {
+          alert(result.message || "❌ Failed to remove employee.");
+        }
+      } catch (err) {
+        console.error("❌ Error unassigning:", err);
+        alert("An error occurred while unassigning.");
+      }
+    }
+
+    function logout() {
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = "Auth_page.html";
+    }
+  </script>
+</body>
+</html>
